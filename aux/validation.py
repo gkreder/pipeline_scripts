@@ -15,84 +15,65 @@ import ast
 def validate(args):
 	db = dataset.connect('sqlite:///%s' % args.db)
 
-	# Check correctness of edges
+	results = {
+	'correct_edges' : [],
+	'incorrect_edges' : [],
+	'skipped_edges' : [],
+	'correct_transformations' : [],
+	'incorrect_transformations' : [],
+	'skipped_transformations' : []
+	}
+
+
+	# Check Edges
 	edges = [x for x in db['edges'].all()]
-	transformations = {int(x['refNum']):x for x in db['transformations']}
-	refTransformations = {x['name']:x for x in db['refTransformations']}
-	knowns = {int(x['refNum']):x for x in db['knowns']}
-	observations = {int(x['refNum']):x for x in db['observations']}
-
-
-	e_corrects = []
-	e_incorrects = []
+	transformations = {x['refNum'] : x for x in db['transformations'].all()}
+	num_correct_edges = 0
+	num_incorrect_edges = 0
 	skipped_edges = 0
-	print('')
-	print('Validating edges...')
-	for e in tqdm(edges):
-		trans = transformations[int(e['trans'])]
-		refTrans = refTransformations[trans['trans']]
-		obs_from = observations[int(trans['obs_from'])]
-		obs_to = observations[int(trans['obs_to'])]
-		if not (ast.literal_eval(str(trans['known_known']))):
+	for e in edges:
+		refNum = e['trans']
+		trans = transformations[refNum]
+		if not ast.literal_eval(str(trans['known_known'])):
 			skipped_edges += 1
+			results['skipped_edges'].append(e)
 			continue
-
-		form_from = obs_from['SMILES']
-		form_to = obs_to['SMILES']
-		v_from = atomVector(form_from)
-		v_to = atomVector(form_to)
-		v_diff = vecDifference(v_from, v_to)
-		v_expected = yaml.load(refTrans['atoms'])
-		atoms_observed = v_diff
-		atoms_expected = v_expected
-		if vecEquals(v_diff, v_expected):
-			e_corrects.append({'edge' : e, 'transformation' : trans, 'observed_vector' : v_diff, 'expected_vector' : v_expected})
+		if ast.literal_eval(str(trans['known_correct'])):
+			num_correct_edges += 1
+			results['correct_edges'].append(e)
 		else:
-			e_incorrects.append({'edge' : e, 'transformation' : trans, 'observed_vector' : v_diff, 'expected_vector' : v_expected})
+			num_incorrect_edges += 1
+			results['incorrect_edges'].append(e)
 
-	# Check correctness of all transformations
+	edges_correct_percent = num_correct_edges / (num_correct_edges + num_incorrect_edges)
+	results['edges_correct_percent'] = edges_correct_percent
+
+	# Check Transformations
 	transformations = [x for x in db['transformations'].all()]
-
-	t_corrects = []
-	t_incorrects = []
 	skipped_transformations = 0
-	print('Validating transformations...')
-	for trans in tqdm(transformations):
-		refTrans = refTransformations[trans['trans']]
-		obs_from = observations[int(trans['obs_from'])]
-		obs_to = observations[int(trans['obs_to'])]
-		if not (ast.literal_eval(str(trans['known_known']))):
-			skipped_edges += 1
+	num_correct_transformations = 0
+	num_incorrect_transformations = 0
+	for trans in transformations:
+		if not ast.literal_eval(str(trans['known_known'])):
+			skipped_transformations += 1
+			results['skipped_transformations'].append(trans)
 			continue
-		form_from = obs_from['SMILES']
-		form_to = obs_to['SMILES']
-		v_from = atomVector(form_from)
-		v_to = atomVector(form_to)
-		v_diff = vecDifference(v_from, v_to)
-		v_expected = yaml.load(refTrans['atoms'])
-		atoms_observed = v_diff
-		atoms_expected = v_expected
-		if vecEquals(v_diff, v_expected):
-			t_corrects.append({'transformation' : trans, 'observed_vector' : v_diff, 'expected_vector' : v_expected})
+		if ast.literal_eval(str(trans['known_correct'])):
+			num_correct_transformations += 1
+			results['correct_transformations'].append(trans)
 		else:
-			t_incorrects.append({'transformation' : trans, 'observed_vector' : v_diff, 'expected_vector' : v_expected})
+			num_incorrect_transformations += 1
+			results['incorrect_transformations'].append(trans)
 
-	e_correct_percent = len(e_corrects) / len(e_corrects + e_incorrects)
-	t_correct_percent = len(t_corrects) / len(t_corrects + t_incorrects)
+	transformations_correct_percent = num_correct_transformations / (num_correct_transformations + num_incorrect_transformations)
+	results['transformations_correct_percent'] = transformations_correct_percent
 
+	print('Correct Transformations - %i' % num_correct_transformations)
+	print('Incorrect Transformations - %i' % num_incorrect_transformations)
+	print('Percent Correct Transformations %f' % transformations_correct_percent)
 	print('')
-	print(len(t_corrects), len(t_incorrects), skipped_transformations)
-	print('%f correct transformations ' % t_correct_percent)
-	print('')
-	print(len(e_corrects), len(e_incorrects), skipped_edges)
-	print('%f correct edges ' % e_correct_percent)
+	print('Correct Edges - %i' % num_correct_edges)
+	print('Incorrect Edges - %i' % num_incorrect_edges)
+	print('Percent Correct Edges %f' % edges_correct_percent)
 
-	results = {'edges_correct_percent' : e_correct_percent, 
-	'transformations_correct_percent' : t_correct_percent,
-	'correct_edges' : e_corrects,
-	'incorrect_edges' : e_incorrects,
-	'correct_transformations' : t_corrects,
-	'incorrect_transformations' : t_incorrects}
-
-	return results
-
+	return(results)

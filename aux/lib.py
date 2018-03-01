@@ -947,7 +947,8 @@ class MergedSet:
 		refTransformations = self.getRefTransformations()
 		refAdducts = self.getRefAdducts()
 
-		all_data = {'observations': observations,
+		all_data = {
+		'observations': observations,
 			'adducts': adducts,
 			'isoforms': isoforms,
 			'transformations': transformations,
@@ -955,7 +956,20 @@ class MergedSet:
 			'edges': edges,
 			'knowns' : knowns,
 			'refTransformations' : refTransformations,
-			'refAdducts' : refAdducts}
+			'refAdducts' : refAdducts
+			}
+
+		prefixes = {
+		'observations': 'o',
+		'adducts': 'a',
+		'isoforms': 'i',
+		'transformations': 't',
+		'nodes': 'n',
+		'edges': 'e',
+		'knowns' : 'k',
+		'refTransformations' : 'rT',
+		'refAdducts' : 'rA'
+		}
 
 		column_names = {x : set([]) for x in all_data.keys()}
 
@@ -964,7 +978,7 @@ class MergedSet:
 		for table_name, data_list in all_data.items():
 			id_num = 0
 			for d in data_list:
-				d.refNum = id_num
+				d.refNum = prefixes[table_name] + str(id_num)
 				id_num += 1
 				column_names[table_name] = column_names[table_name].union(set(vars(d).keys()))
 		# Convert to Sql rows and insert into table
@@ -979,7 +993,7 @@ class MergedSet:
 				if 'id' in r:
 					del r['id']
 				sql_rows.append(r)
-			print('\nInserting %s\n' % table_name)
+			print('Inserting %s' % table_name)
 			db[table_name].insert_many(sql_rows, ensure='pid')
 
 
