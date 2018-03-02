@@ -28,6 +28,12 @@ def validate(args):
 	# Check Edges
 	edges = [x for x in db['edges'].all()]
 	transformations = {x['refNum'] : x for x in db['transformations'].all()}
+	# transformations = {}
+	# for x in db['transformations'].all():
+	# 	print(x['refNum'])
+	# 	transformations[x['refNum']] = x
+
+
 	num_correct_edges = 0
 	num_incorrect_edges = 0
 	skipped_edges = 0

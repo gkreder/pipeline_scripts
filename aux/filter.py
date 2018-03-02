@@ -37,27 +37,27 @@ def isPossible(trans, obs_from, obs_to, refTrans):
 				continue
 	return possible
 
-def optimize_mz_tolerance(db):
-	# Find max error among all transformations
-	# look at all transformations between known observations
-	# Starting with max error, incrementally decrease the mz tolerance until all 
-	# the known-known transformations have been whitled out. 
-	all_transformations = []
-	known_transformations = []
+# def optimize_mz_tolerance(db):
+# 	# Find max error among all transformations
+# 	# look at all transformations between known observations
+# 	# Starting with max error, incrementally decrease the mz tolerance until all 
+# 	# the known-known transformations have been whitled out. 
+# 	all_transformations = []
+# 	known_transformations = []
 
-	max_tol = float(db['transformations'].find_one()['dmz_err'])
+# 	max_tol = float(db['transformations'].find_one()['dmz_err'])
 
-	print('Optimizing MZ Tolerance...')
+# 	print('Optimizing MZ Tolerance...')
 
-	for x in db['transformations'].all():
-		all_transformations.append(x)
+# 	for x in db['transformations'].all():
+# 		all_transformations.append(x)
 		
-		if float(x['dmz_err']) > max_tol:
-			max_tol = float(x['dmz_err'])
+# 		if float(x['dmz_err']) > max_tol:
+# 			max_tol = float(x['dmz_err'])
 
-	best_tol = max_tol
+# 	best_tol = max_tol
 
-	while 
+# 	while 
 
 
 
@@ -75,30 +75,31 @@ def filter_transformations(args):
 
 	os.system(('cp \"%s\" \"%s\"' % (os.path.abspath(args.in_db), (os.path.abspath(args.out_db)))))
 
-	# edges = [x for x in db['edges'].all()]
-	# transformations = {int(x['refNum']):x for x in db['transformations']}
-	# refTransformations = {x['name']:x for x in db['refTransformations']}
-	# knowns = {int(x['refNum']):x for x in db['knowns']}
-	# observations = {int(x['refNum']):x for x in db['observations']}
-	# nodes = {int(x['refNum']):x for x in db['nodes']}
+	edges = [x for x in db['edges'].all()]
+	transformations = {x['refNum']:x for x in db['transformations']}
+	refTransformations = {x['name']:x for x in db['refTransformations']}
+	knowns = {x['refNum']:x for x in db['knowns']}
+	observations = {x['refNum']:x for x in db['observations']}
+	nodes = {x['refNum']:x for x in db['nodes']}
 
-	# print('Pruning impossible transformations')
-	# impossible_count = 0
-	# for trans in tqdm(transformations.values()):
-	# 	obs_from = observations[trans['obs_from']]
-	# 	obs_to = observations[trans['obs_to']]
-	# 	refTrans = refTransformations[trans['trans']]
-	# 	if ast.literal_eval(str(obs_from['known'])) and ast.literal_eval(str(obs_to['known'])):
-	# 		if not isPossible(trans, obs_from, obs_to, refTrans):
-	# 			# Remove Transformation
-	# 			# Remove associated edges
-	# 			db['transformations'].delete(refNum=trans['refNum'])
-	# 			impossible_count += 1
-	# 			for e in edges:
-	# 				if int(e['trans']) == int(trans['refNum']):
-	# 					db['edges'].delete(refNum=e['refNum'])
-	# print('Removed %i of %i total transformations' % (impossible_count, len(transformations)))
+	print('Pruning impossible transformations')
+	impossible_count = 0
+	for trans in tqdm(transformations.values()):
+		obs_from = observations[trans['obs_from']]
+		obs_to = observations[trans['obs_to']]
+		refTrans = refTransformations[trans['trans']]
+		# if ast.literal_eval(str(obs_from['known'])) and ast.literal_eval(str(obs_to['known'])):
+		if ast.literal_eval(str(trans['known_known'])):
+			if not isPossible(trans, obs_from, obs_to, refTrans):
+				# Remove Transformation
+				# Remove associated edges
+				db['transformations'].delete(refNum=trans['refNum'])
+				impossible_count += 1
+				for e in edges:
+					if e['trans'] == trans['refNum']:
+						db['edges'].delete(refNum=e['refNum'])
+	print('Removed %i of %i total transformations' % (impossible_count, len(transformations)))
 
-	optimize_mz_tolerance(db)
+	# optimize_mz_tolerance(db)
 
 
