@@ -23,7 +23,9 @@ def toSqlRow(o):
 			n_row[var] = None
 		elif type(value) == str:
 			n_row[var] = value
-		elif type(value) in [int, bool, float, dict]:
+		elif type(value) in [float, int, bool]:
+			n_row[var] = value
+		elif type(value) in [dict]:
 			n_row[var] = str(value)
 		elif type(value) == DSet:
 			n_row[var] = ';'.join(str(x.refNum) for x in value.data)
