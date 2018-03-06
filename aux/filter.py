@@ -113,26 +113,32 @@ def filter_transformations(args):
 	observations = {x['refNum']:x for x in db['observations']}
 	nodes = {x['refNum']:x for x in db['nodes']}
 
-	print('Pruning impossible transformations')
-	impossible_count = 0
-	for trans in tqdm(transformations.values()):
-		obs_from = observations[trans['obs_from']]
-		obs_to = observations[trans['obs_to']]
-		refTrans = refTransformations[trans['trans']]
-		# if ast.literal_eval(str(obs_from['known'])) and ast.literal_eval(str(obs_to['known'])):
-		if ast.literal_eval(str(trans['known_known'])):
-			if not isPossible(trans, obs_from, obs_to, refTrans):
-				# Remove Transformation
-				# Remove associated edges
-				db['transformations'].delete(refNum=trans['refNum'])
-				impossible_count += 1
-				for e in edges:
-					if e['trans'] == trans['refNum']:
-						db['edges'].delete(refNum=e['refNum'])
-	print('Removed %i of %i total transformations' % (impossible_count, len(transformations)))
+	if not args.no_impossible:
+		print('Pruning impossible transformations')
+		impossible_count = 0
+		for trans in tqdm(transformations.values()):
+			obs_from = observations[trans['obs_from']]
+			obs_to = observations[trans['obs_to']]
+			refTrans = refTransformations[trans['trans']]
+			# if ast.literal_eval(str(obs_from['known'])) and ast.literal_eval(str(obs_to['known'])):
+			if ast.literal_eval(str(trans['known_known'])):
+				if not isPossible(trans, obs_from, obs_to, refTrans):
+					# Remove Transformation
+					# Remove associated edges
+					db['transformations'].delete(refNum=trans['refNum'])
+					impossible_count += 1
+					for e in edges:
+						if e['trans'] == trans['refNum']:
+							db['edges'].delete(refNum=e['refNum'])
+		print('Removed %i of %i total transformations' % (impossible_count, len(transformations)))
+	else:
+		print('Skipping impossible transformations step')
 
-	optimize_mz_tolerance(db)
+	if not args.no_optimization:
+		optimize_mz_tolerance(db)
+	else:
+		print('Skipping tolerance optimization step')
 
-	# optimize_mz_tolerance(db)
+	print('Done')
 
 

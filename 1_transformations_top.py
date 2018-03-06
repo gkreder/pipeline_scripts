@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--trans_file', '-t', required = True, dest = 'trans_file', help = 'Transformation file')
-	parser.add_argument('-o', required = True, dest = 'out_dir', help = 'Output directory')
+	parser.add_argument('-o', '--out_dir', required = True, dest = 'out_dir', help = 'Output directory')
 	parser.add_argument('--trans_tol_mz', default = trans_tol_mz, type = float, help = 'Transformation Tolerance (m/z units)')
 	parser.add_argument('--adduct_tol_mz', default = adduct_tol_mz, type = float, help = 'Adduct Tolerance (m/z units)')
 	parser.add_argument('--adduct_tol_rt', default = adduct_tol_rt, type = float, help = 'Adduct Tolerance (rt units)')

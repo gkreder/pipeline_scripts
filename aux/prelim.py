@@ -362,7 +362,7 @@ def add_data(args):
 			if len(same_row) > 0:
 				db[args.table_name].delete(compound=r['compound'].replace('\"',''))
 		pid = r['pid']
-		if pid != '':
+		if pid not in ['', None]:
 			# print(pid)
 			pid_results = [x for x in db.query('select * from compounds where PUBCHEM_ID = ' + str(pid))]
 			if len(pid_results) > 1:
