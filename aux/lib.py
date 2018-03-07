@@ -13,6 +13,7 @@ import dataset
 import numpy as np
 from tqdm import tqdm
 from rdkit import Chem
+import yaml
 ################################################################################
 # to sql row
 ################################################################################
@@ -1042,53 +1043,6 @@ class MergedSet:
 ################################################################################
 # Molecular formula to vector
 ################################################################################
-# def atomVector(m_formula):
-# 	m_formula = m_formula.split('(')[0]
-
-
-# 	atoms_remove = ['Cl', 'Ba']
-# 	for a in atoms_remove:
-# 		index = m_formula.find(a)
-# 		if index > -1:
-# 			start_remove = index
-# 			end_remove = index + len(a) - 1
-# 			for i in range(end_remove + 1, len(m_formula)):
-# 				if not m_formula[i].isdigit():
-# 					break
-# 				end_remove += 1
-# 			m_formula = m_formula[ : start_remove] + m_formula[end_remove + 1 : ]
-
-
-# 	if m_formula == 'H2C4H4O6':
-# 		m_formula = 'H6C4O6'
-# 	atoms = ['H','C','N','O','P','S']
-# 	atom_indices = [m_formula.find(x) for x in atoms]
-# 	for a in atoms: 
-# 		if m_formula.count(a) > 1:
-# 			print('')
-# 			print(m_formula)
-# 			sys.exit('Error: check the formula, multiple occurences of same atom')
-
-# 	vec = {}
-# 	for a_i, a in enumerate(atoms):
-# 		atom_index = atom_indices[a_i]
-# 		if atom_index == -1:
-# 			vec[a] = 0
-# 			continue
-# 		indices_temp = [x for x in atom_indices if x > atom_index]
-# 		# indices_temp = [x - atom_index for x in indices_temp]
-# 		if len(indices_temp) > 0:
-# 			atom_count = m_formula[atom_index + 1 : min(indices_temp)]
-# 		else:
-# 			atom_count = m_formula[atom_index + 1 : len(m_formula)]
-
-# 		atom_count = atom_count.replace('-', '').replace('+', '')
-# 		if atom_count == '':
-# 			atom_count = '1'
-# 		atom_count = int(atom_count)
-# 		# print(a, atom_index, atom_count)
-# 		vec[a] = atom_count
-# 	return vec
 def atomVector(smiles):
     m = Chem.MolFromSmiles(smiles)
     m = Chem.AddHs(m)
@@ -1100,6 +1054,32 @@ def atomVector(smiles):
         else:
             atom_vec[a.GetSymbol()] = 1
     return atom_vec
+
+def atomsFromObs(obs):
+	smiles = obs['SMILES']
+	vec = atomVector(smiles)
+	return vec
+
+def atomsFromRefTrans(rt):
+	atoms = yaml.load(rt['atoms'])
+	return atoms
+
+
+# Gives the vector v2 - v1. NOTE not the same as vecDifference
+def vecSubtract(v2, v1):
+	out_vec = {x:v2[x] for x in v2}
+	for a in v1.keys():
+		if a not in v2.keys():
+			if v1[a] == 0:
+				out_vec[a] = 0
+			elif v1[a] < 0:
+				out_vec[a] = abs(v1[a])
+			else:
+				print('v2 - %s' %str(v2))
+				print('v1 - %s' %str(v1))
+				sys.exit('Error (lib.py): Trying to subtract atoms that dont exist')
+		out_vec[a] -= v1[a]
+	return out_vec
 
 def vecDifference(v_from, v_to):
 	atoms_from = v_from.keys()
@@ -1114,6 +1094,41 @@ def vecDifference(v_from, v_to):
 
 	return out_vec
 
+def vecAdd(v1, v2):
+	out_vec = {x:v1[x] for x in v1}
+	for a in v2.keys():
+		if a in out_vec.keys():
+			out_vec[a] += v2[a]
+		else:
+			out_vec[a] = v2[a]
+	return out_vec
+
+
+def vecGuess(unknown, known, trans, rt):
+	k_num = known['refNum']
+	trans_atoms = atomsFromRefTrans(rt)
+	# known is the obs_from
+	if trans['obs_from'] == k_num:
+		from_atoms = atomsFromObs(known)
+		guess = vecAdd(from_atoms, trans_atoms)
+	# known is the obs_to
+	else:
+		to_atoms = atomsFromObs(known)
+		guess = vecSubtract(to_atoms, trans_atoms)
+
+	for a in guess:
+		if guess[a] < 0:
+			print('\n')
+			print('unknown (%s) - %s' % (unknown['refNum'], str(unknown['name'])))
+			print('\n\nknown (%s) - %s' % (known['refNum'], str(atomsFromObs(known))))
+			print('\n\ntrans - %s' % trans['name'])
+			print('\n\nrefTrans - %s' % str(atomsFromRefTrans(rt)))
+			print('\n\nguess - %s' % str(guess))
+			sys.exit('\nError (lib.py) - Impossible guess')
+
+	return guess
+
+		
 def vecEquals(v1, v2):
 	atoms_1 = v1.keys()
 	atoms_2 = v2.keys()

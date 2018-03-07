@@ -15,27 +15,46 @@ from tqdm import tqdm
 import numpy as np
 ################################################################################
 def isPossible(trans, obs_from, obs_to, refTrans):
-	proposed_atom_change = yaml.load(refTrans['atoms'])
-	atoms_from = atomVector(obs_from['SMILES'])
-	atoms_to = atomVector(obs_to['SMILES'])
+	atom_change = yaml.load(refTrans['atoms'])
 	possible = True
-	for atom, atom_count in proposed_atom_change.items():
-		if atom_count == 0:
-			continue
-		if atom_count < 0:
-			if atom not in atoms_from.keys():
-				possible = False
+	# if (not obs_from['known']) and (not obs_to['known']):
+		# return possible
+
+	if trans['known_known']:
+		atoms_from = atomVector(obs_from['SMILES'])
+		atoms_to = atomVector(obs_to['SMILES'])
+		for atom, atom_count in atom_change.items():
+			if atom_count == 0:
 				continue
-			if atoms_from[atom] < abs(atom_count):
+			if atom_count < 0:
+				if atom not in atoms_from.keys():
+					possible = False
+					continue
+				if atoms_from[atom] < abs(atom_count):
+					possible = False
+					continue
+			else:
+				if atom not in atoms_to.keys() or atoms_to[atom] == 0:
+					possible = False
+					continue
+				if atoms_to[atom] < atom_count:
+					possible = False
+					continue
+
+	if obs_from['known']:
+		atoms_from = atomVector(obs_from['SMILES'])
+		for a in atom_change:
+			atom_count = atom_change[a]
+			if atom_count < 0 and (a not in atoms_from.keys() or abs(atom_count) > atoms_from[a]):
 				possible = False
-				continue
-		else:
-			if atom not in atoms_to.keys() or atoms_to[atom] == 0:
+
+	if obs_to['known']:
+		atoms_to = atomVector(obs_to['SMILES'])
+		for a in atom_change:
+			atom_count = atom_change[a]
+			if atom_count > 0 and (a not in atoms_to or atoms_to[a] == 0):
 				possible = False
-				continue
-			if atoms_to[atom] < atom_count:
-				possible = False
-				continue
+
 	return possible
 
 def no_id(x):
@@ -121,15 +140,14 @@ def filter_transformations(args):
 			obs_to = observations[trans['obs_to']]
 			refTrans = refTransformations[trans['trans']]
 			# if ast.literal_eval(str(obs_from['known'])) and ast.literal_eval(str(obs_to['known'])):
-			if ast.literal_eval(str(trans['known_known'])):
-				if not isPossible(trans, obs_from, obs_to, refTrans):
-					# Remove Transformation
-					# Remove associated edges
-					db['transformations'].delete(refNum=trans['refNum'])
-					impossible_count += 1
-					for e in edges:
-						if e['trans'] == trans['refNum']:
-							db['edges'].delete(refNum=e['refNum'])
+			if not isPossible(trans, obs_from, obs_to, refTrans):
+				# Remove Transformation
+				# Remove associated edges
+				db['transformations'].delete(refNum=trans['refNum'])
+				impossible_count += 1
+				for e in edges:
+					if e['trans'] == trans['refNum']:
+						db['edges'].delete(refNum=e['refNum'])
 		print('Removed %i of %i total transformations' % (impossible_count, len(transformations)))
 	else:
 		print('Skipping impossible transformations step')
