@@ -45,10 +45,10 @@ def find_transformations(args):
 	lines_trans = sorted(lines, key = lambda line : float(line.mz))
 	lines_adducts = sorted(lines, key = lambda line : float(line.rt))
 	# Check if all the same method
-	mc = set([x.method for x in lines_trans])
-	if len(mc) > 1 and args.input_type != 'shuo_sql':
-		sys.exit('''Error: Multiple methods in the same input file.
-			Must separate inputs from different methods''')
+	# mc = set([x.method for x in lines_trans])
+	# if len(mc) > 1 and args.input_type != 'shuo_sql':
+	# 	sys.exit('''Error: Multiple methods in the same input file.
+	# 		Must separate inputs from different methods''')
 	if args.test:
 		lines_trans = lines_trans[0 : 500]
 		lines_adducts = lines_adducts[0 : 500]
@@ -115,42 +115,43 @@ def find_transformations(args):
 					continue
 			if i == j:
 				continue
-			if line_outer.method == line_inner.method:
-				# temp method
-				def cm(x):
-					m1 = abs(x.dmz - delta_mz)
-					m2 = abs(x.dmz + delta_mz)
-					return(min(m1, m2))
-				# given our transformations, what's the closest possible one to
-				# the one we've observed
-				closest_match = min(transformations_ref, key = lambda x : cm(x))
-				dist_current = abs(closest_match.dmz - delta_mz)
-				dist_reverse = abs(closest_match.dmz + delta_mz)
-				md = min(dist_reverse, dist_current)
-				# Check if within trans tolerance				
-				if closest_match.name.lower() == 'isoform':
-					if md <= args.isoform_tol_mz:
-						obs_from = line_inner
+
+			# if line_outer.method == line_inner.method:
+			# temp method
+			def cm(x):
+				m1 = abs(x.dmz - delta_mz)
+				m2 = abs(x.dmz + delta_mz)
+				return(min(m1, m2))
+			# given our transformations, what's the closest possible one to
+			# the one we've observed
+			closest_match = min(transformations_ref, key = lambda x : cm(x))
+			dist_current = abs(closest_match.dmz - delta_mz)
+			dist_reverse = abs(closest_match.dmz + delta_mz)
+			md = min(dist_reverse, dist_current)
+			# Check if within trans tolerance				
+			if closest_match.name.lower() == 'isoform':
+				if md <= args.isoform_tol_mz:
+					obs_from = line_inner
+					obs_to = line_outer
+					i_s = Isoform(obs_from, obs_to)
+					saved_isoforms.append(i_s)
+			else:
+				if md <= args.trans_tol_mz:
+					obs_to = line_inner
+					obs_from = line_outer
+
+
+					# Make sure the order of transformation is correct
+					# This was a bug, but why did it make the accuracy better?
+					if dist_reverse < dist_current:
 						obs_to = line_outer
-						i_s = Isoform(obs_from, obs_to)
-						saved_isoforms.append(i_s)
-				else:
-					if md <= args.trans_tol_mz:
-						obs_to = line_inner
-						obs_from = line_outer
-
-
-						# Make sure the order of transformation is correct
-						# This was a bug, but why did it make the accuracy better?
-						if dist_reverse < dist_current:
-							obs_to = line_outer
-							obs_from = line_inner
-						t_s = Trans(closest_match, obs_from, obs_to)
-						if obs_from == obs_to:
-							print(line_outer)
-							print(line_inner)
-							sys.exit('Error (transformations.py) - the two observations should not be the same')
-						saved_transformations.append(t_s)
+						obs_from = line_inner
+					t_s = Trans(closest_match, obs_from, obs_to)
+					if obs_from == obs_to:
+						print(line_outer)
+						print(line_inner)
+						sys.exit('Error (transformations.py) - the two observations should not be the same')
+					saved_transformations.append(t_s)
 		j_start = j_temp
 
 	# Check for duplicates

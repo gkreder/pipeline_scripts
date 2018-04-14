@@ -47,13 +47,15 @@ def isPossible(trans, obs_from, obs_to, refTrans):
 			atom_count = atom_change[a]
 			if atom_count < 0 and (a not in atoms_from.keys() or abs(atom_count) > atoms_from[a]):
 				possible = False
+				
 
 	if obs_to['known']:
 		atoms_to = atomVector(obs_to['SMILES'])
 		for a in atom_change:
 			atom_count = atom_change[a]
-			if atom_count > 0 and (a not in atoms_to or atoms_to[a] == 0):
+			if atom_count > 0 and (a not in atoms_to or atoms_to[a] < atom_count):
 				possible = False
+
 
 	return possible
 

@@ -56,9 +56,9 @@ class Obs:
 		db = dataset.connect('sqlite:///' + knowns_db)
 		db_results = [x for x in db.query('select * from %s where id = %s' % (table_name, str(index)))]
 		if len(db_results) > 1:
-			sys.exit('Error: Found multiple index hits for index %s' % index)
+			sys.exit('Error (lib.py): Found multiple index hits for index %s' % index)
 		if len(db_results) == 0:
-			sys.exit('Error: No PID hits for index %s' % index)
+			sys.exit('Error (lib.py): No PID hits for index %s' % index)
 		db_hit = db_results[0]
 		if 'mz' in db_hit:
 			self.mz = db_hit['mz']
@@ -81,7 +81,7 @@ class Obs:
 		self.refNum = None
 		if 'pid' in db_hit and db_hit['pid'] not in ['None', None, 'NULL', '']:
 			if 'FID' not in db_hit or db_hit['FID'] in ['None', None, 'NULL', '']:
-				sys.exit('\nError: index %s in table name %s has pid entry but no FID entry' % (str(index), table_name))
+				sys.exit('\nError (lib.py): index %s in table "%s" has pid entry but no FID entry' % (str(index), table_name))
 			self.pid = db_hit['pid']
 			self.FID = db_hit['FID']
 			self.known = True
@@ -224,8 +224,8 @@ class Trans:
 		# method
 		self.method = obs_from.method
 		self.name = obs_from.name + '--->' + obs_to.name
-		if obs_to.method != self.method:
-			sys.exit('Error: Different observation methods for proposed transformation')
+		# if obs_to.method != self.method:
+		# 	sys.exit('Error (lib.py): Different observation methods for proposed transformation')
 		
 		# For now, creating a single attribute (known_correct) that encapsulates
 		# two conditions. For known_correct to be True, must have a trans that is
@@ -234,12 +234,17 @@ class Trans:
 		# EDIT - I'm also adding in another attribute called known_known
 		# because I might want to distinguish between things that we are 
 		# sure are incorrect (that must be known--->known)
+		self.known_unknown = False
 		if self.obs_from.known and self.obs_to.known:
 			self.known_known = True
 			if Trans.correct(closest_match, obs_from, obs_to):
 				self.known_correct = True
 			else:
 				self.known_correct = False
+		elif self.obs_from.known or self.obs_to.known:
+			self.known_unknown = True
+			self.known_correct = False
+			self.known_known = False
 		else:
 			self.known_known = False
 			self.known_correct = False
@@ -399,8 +404,8 @@ class AdductTrans:
 		self.dmz_obs = delta_mz_obs
 		self.method = obs_from.method
 		self.name = obs_from.name + '--->' + obs_to.name
-		if obs_to.method != self.method:
-			sys.exit('Error: Different observation methods for proposed adduct transformation')
+		# if obs_to.method != self.method:
+			# sys.exit('Error (lib.py): Different observation methods for proposed adduct transformation')
 		if type(closest_match) == RefAdductTrans:
 			self.mode = closest_match.mode
 		else:
@@ -472,8 +477,8 @@ class Isoform():
 		self.drt = float(obs_to.rt) - float(obs_from.rt)
 		self.method = obs_from.method
 		self.name = obs_from.name + '--->' + obs_to.name
-		if obs_to.method != self.method:
-			sys.exit('Error: Different observation methods for proposed isoform')
+		# if obs_to.method != self.method:
+			# sys.exit('Error (lib.py): Different observation methods for proposed isoform')
 
 	def __str__(self):
 		s = 'Isoform: ' + str(self.obs_from) + '--->' + str(self.obs_to)
@@ -1054,6 +1059,18 @@ def atomVector(smiles):
         else:
             atom_vec[a.GetSymbol()] = 1
     return atom_vec
+
+def vecToString(vec):
+	SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+	SUP = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+	s = ""
+	for a in vec:
+		if vec[a] > 0:
+			s += a 
+			s += str(vec[a])
+			s += ' '
+	# return s.translate(SUB)
+	return s
 
 def atomsFromObs(obs):
 	smiles = obs['SMILES']

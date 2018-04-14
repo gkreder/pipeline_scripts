@@ -26,6 +26,8 @@ def rank(args):
 		u_num = u['refNum']
 		name = u['name']
 		query = "select * from transformations where obs_from=\'%s\' or obs_to=\'%s\'" % (u_num, u_num)
+		if name == 'u215_Taurine conjugation_75810':
+			print(query)
 		K = [x for x in db.query(query)]
 		S = 0
 		if len(K) == 0:
@@ -51,7 +53,7 @@ def rank(args):
 	n_factor = 1.0 / sum(error_scores.values())
 	for e in error_scores:
 		error_scores[e] = (error_scores[e]*n_factor) + 1
-		
+
 	return guess_list, error_scores
 
 def agreement_score(guesses):
@@ -81,6 +83,10 @@ def clean(guess_list, error_scores, args):
 	total_scores = {}
 
 	for u, guesses in guess_list:
+		print('\n')
+		print(u['name'])
+		print(guesses)
+		print('\n')
 		if len(guesses) == 0:
 			continue 
 
@@ -96,9 +102,15 @@ def clean(guess_list, error_scores, args):
 
 def clean_rank(args):
 	guess_list, error_scores = rank(args)
+	print('---------------------------------------')
+	print('%i guess_list' % len(guess_list))
+	print('---------------------------------------')
 	final_list = clean(guess_list, error_scores, args)
+	print('---------------------------------------')
+	print('%i final_list' % len(final_list))
+	print('---------------------------------------')
 	for (u, guesses, best_guess) in final_list:
-		print(u['name'], best_guess)
+		print(u['name'], ' --- ',lib.vecToString(best_guess))
 	return final_list
 
 
