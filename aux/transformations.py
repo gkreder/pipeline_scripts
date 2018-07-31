@@ -86,6 +86,8 @@ def find_transformations(args):
 	# Find Transformations
 	############################################################################
 	print('\nFinding Transformations...')
+	redun_transformations_from = {} # keys = names, values = list of pids
+	redun_transformations_to = {}
 	saved_transformations = []
 	saved_observations = []
 	saved_observations_indices = []
@@ -147,6 +149,29 @@ def find_transformations(args):
 						obs_to = line_outer
 						obs_from = line_inner
 					t_s = Trans(closest_match, obs_from, obs_to)
+					if not args.no_filter:
+						# Don't allow redundant PID transformations
+						if obs_from.known:
+							if obs_to.name in redun_transformations_to:
+								if obs_from.pid in redun_transformations_to[obs_to.name]:
+									continue
+								else:
+									redun_transformations_to[obs_to.name].append(obs_from.pid)
+							else:
+								redun_transformations_to[obs_to.name] = [obs_from.pid]
+						if obs_to.known:
+							if obs_from.name in redun_transformations_from:
+								if obs_to.pid in redun_transformations_from[obs_from.name]:
+									continue
+								else:
+									redun_transformations_from[obs_from.name].append(obs_to.pid)
+							else:
+								redun_transformations_from[obs_from.name] = [obs_to.pid]
+
+						# Filter impossible transformations
+						
+
+
 					if obs_from == obs_to:
 						print(line_outer)
 						print(line_inner)

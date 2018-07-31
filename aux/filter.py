@@ -159,6 +159,45 @@ def filter_transformations(args):
 	else:
 		print('Skipping tolerance optimization step')
 
+	# if not args.no_pid_check:
+	# 	print('Removing redundant transformations by PID number')
+	# 	redun_count = 0
+	# 	edges = [x for x in db['edges'].all()]
+	# 	transformations = {x['refNum']:x for x in db['transformations']}
+	# 	refTransformations = {x['name']:x for x in db['refTransformations']}
+	# 	knowns = {x['refNum']:x for x in db['knowns']}
+	# 	observations = {x['refNum']:x for x in db['observations']}
+	# 	nodes = {x['refNum']:x for x in db['nodes']}
+	# 	checked_from_pids = []
+	# 	checked_to_pids = []
+
+	# 	for trans in tqdm(transformations.values()):
+	# 		obs_from = observations[trans['obs_from']]
+	# 		obs_to = observations[trans['obs_to']]
+
+	# 		if obs_from['known']:
+	# 			pid_from = obs_from['pid']
+	# 			if pid_from not in checked_from_pids:
+	# 				transformations_to = [x for x in db.query('select * from transformations where obs_to==\'%s\' and obs_from !=\'%s\'' % (obs_to['refNum'], obs_from['refNum']))]
+	# 				for tt in transformations_to:
+	# 					check_pid = [x for x in db.query('select pid from observations where refNum==\'%s\'' % tt['obs_from'])][0]['pid']
+	# 					if check_pid == pid_from:
+	# 						db['transformations'].delete(refNum=tt['refNum'])
+	# 				checked_from_pids.append(pid_from)
+
+	# 		if obs_to['known']:
+	# 			pid_to = obs_to['pid']
+	# 			if pid_to not in checked_to_pids:
+	# 				transformations_from = [x for x in db.query('select * from transformations where obs_from==\'%s\' and obs_to !=\'%s\'' % (obs_from['refNum'], obs_to['refNum']))]
+	# 				for tf in transformations_from:
+	# 					check_pid = [x for x in db.query('select pid from observations where refNum==\'%s\'' % tf['obs_to'])][0]['pid']
+	# 					if check_pid == pid_to:
+	# 						db['transformations'].delete(refNum=tf['refNum'])
+	# 				checked_from_pids.append(pid_to)
+
+	# else:
+		# print('Skipping PID number check')
+
 	print('Done')
 
 

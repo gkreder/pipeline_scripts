@@ -224,6 +224,7 @@ class Trans:
 		# method
 		self.method = obs_from.method
 		self.name = obs_from.name + '--->' + obs_to.name
+		self.isoform = False
 		# if obs_to.method != self.method:
 		# 	sys.exit('Error (lib.py): Different observation methods for proposed transformation')
 		
@@ -274,13 +275,13 @@ class Trans:
 		l.append(self.trans.name)
 		l.append(str(self.dmz_obs))
 		l.append(str(self.trans.dmz - self.dmz_obs))
-		l.append(self.obs_from.name)
+		l.append(str(self.obs_from.name))
 		l.append(str(self.obs_from.mz))
 		l.append(str(self.obs_from.rt))
-		l.append(self.obs_to.name)
+		l.append(str(self.obs_to.name))
 		l.append(str(self.obs_to.mz))
 		l.append(str(self.obs_to.rt))
-		l.append(self.method)
+		l.append(str(self.method))
 		return(delimiter.join(l))
 	# Return a tsv header
 	def header(delimiter = '\t'):
@@ -417,16 +418,16 @@ class AdductTrans:
 	def line(self, delimiter = '\t'):
 		l = []
 		l.append(self.obs_from.name + '--->' + self.obs_to.name)
-		l.append(self.adductTrans.name)
+		l.append(str(self.adductTrans.name))
 		l.append(str(self.dmz_obs))
 		l.append(str(self.adductTrans.dmz - self.dmz_obs))
-		l.append(self.obs_from.name)
+		l.append(str(self.obs_from.name))
 		l.append(str(self.obs_from.mz))
 		l.append(str(self.obs_from.rt))
-		l.append(self.obs_to.name)
+		l.append(str(self.obs_to.name))
 		l.append(str(self.obs_to.mz))
 		l.append(str(self.obs_to.rt))
-		l.append(self.method)
+		l.append(str(self.method))
 		return(delimiter.join(l))
 	# Return a tsv header
 	def header(delimiter = '\t'):
@@ -477,6 +478,23 @@ class Isoform():
 		self.drt = float(obs_to.rt) - float(obs_from.rt)
 		self.method = obs_from.method
 		self.name = obs_from.name + '--->' + obs_to.name
+		self.trans = 'isoform'
+		self.dmz_err = abs(self.dmz_obs)
+		self.isoform = True
+		self.known_unknown = False
+		if self.obs_from.known and self.obs_to.known:
+			self.known_known = True
+			if atomVector(obs_from.SMILES) == atomVector(obs_to.SMILES):
+				self.known_correct = True
+			else:
+				self.known_correct = False
+		elif self.obs_from.known or self.obs_to.known:
+			self.known_unknown = True
+			self.known_correct = False
+			self.known_known = False
+		else:
+			self.known_known = False
+			self.known_correct = False
 		# if obs_to.method != self.method:
 			# sys.exit('Error (lib.py): Different observation methods for proposed isoform')
 
@@ -490,13 +508,13 @@ class Isoform():
 		l.append(self.obs_from.name + '--->' + self.obs_to.name)
 		l.append(str(self.dmz_obs))
 		l.append(str(0.0 - self.dmz_obs))
-		l.append(self.obs_from.name)
+		l.append(str(self.obs_from.name))
 		l.append(str(self.obs_from.mz))
 		l.append(str(self.obs_from.rt))
-		l.append(self.obs_to.name)
+		l.append(str(self.obs_to.name))
 		l.append(str(self.obs_to.mz))
 		l.append(str(self.obs_to.rt))
-		l.append(self.method)
+		l.append(str(self.method))
 		return(delimiter.join(l))
 	# Return a tsv header
 	def header(delimiter = '\t'):
@@ -1060,15 +1078,58 @@ def atomVector(smiles):
             atom_vec[a.GetSymbol()] = 1
     return atom_vec
 
-def vecToString(vec):
+def vecToString(vec, format = 'default'):
 	SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 	SUP = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
 	s = ""
-	for a in vec:
-		if vec[a] > 0:
-			s += a 
-			s += str(vec[a])
-			s += ' '
+	if format == 'default':
+		for a in vec:
+			if vec[a] > 0:
+				s += a 
+				s += str(vec[a])
+				s += ' '
+
+	elif format == 'dict':
+		def priority(x):
+			if x == 'C':
+				return 0
+			elif x == 'H':
+				return 1
+			elif x == 'N':
+				return 2
+			elif x == 'O':
+				return 3
+			else:
+				return 4
+		atoms = sorted(list(vec.keys()), key=priority)
+		s = '{'
+		for a in atoms:
+			s += a + ': ' + str(vec[a]) + ', '
+		s = s[0 : -2]
+		s += '}'
+
+	elif format == 'pubchem':
+		def priority(x):
+			if x == 'C':
+				return 0
+			elif x == 'H':
+				return 1
+			elif x == 'N':
+				return 2
+			elif x == 'O':
+				return 3
+			else:
+				return 4
+		atoms = sorted(list(vec.keys()), key=priority)
+		s = ''
+		for a in atoms:
+			if vec[a] > 0:
+				s += a + str(vec[a])
+
+
+	else:
+		sys.exit('Error (lib.py) - Unrecognized output vector format')
+
 	# return s.translate(SUB)
 	return s
 

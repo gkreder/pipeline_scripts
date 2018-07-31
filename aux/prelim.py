@@ -149,6 +149,12 @@ def scrape_json(json_file):
 							molecular_weight = [x for x in row['Cell'] if 'NumValue' in x][0]['NumValue']
 							scraped_info['MOLECULAR_WEIGHT'] = molecular_weight
 						########################################################
+						# Exact Mass
+						########################################################
+						elif prop_name == 'Exact Mass':
+							exact_mass = [x for x in row['Cell'] if 'NumValue' in x][0]['NumValue']
+							scraped_info['EXACT_MASS'] = exact_mass
+						########################################################
 						# Hydrogen bond donor count
 						########################################################
 						elif prop_name == 'Hydrogen Bond Donor Count':

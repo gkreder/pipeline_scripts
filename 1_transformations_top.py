@@ -49,6 +49,7 @@ if __name__ == '__main__':
 	# parser.add_argument('--knowns_file', '-kf', type = str, required = True, dest = 'knowns_file')
 	parser.add_argument('--knowns_db', '-k', type = str, required = True, dest = 'knowns_db')
 	parser.add_argument('--input_table_name', '-i', type = str, required = True, dest = 'input_table_name')
+	parser.add_argument('--no_filter', action = 'store_true')
 	parser.set_defaults(test=False, has_header=True)
 	args = parser.parse_args()
 	print(args)
